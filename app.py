@@ -43,10 +43,21 @@ def build_overview(db):
     }
 
 
-def build_chat_response(action):
+def find_product(products, query):
+    query = query.lower()
+    for product in products:
+        if product["name"].lower() in query:
+            return product
+    return None
+
+
+def build_chat_response(action="", message=""):
     db = load()
     products = db["products"]
     summary = build_cart_summary(db)
+    overview = build_overview(db)
+    action = (action or "").strip().lower()
+    message = (message or "").strip().lower()
 
     if action == "show_products":
         lines = [
@@ -76,7 +87,7 @@ def build_chat_response(action):
             return {
                 "title": "Cart status",
                 "message": "Your cart is empty right now.",
-                "items": ["Use the Add to Cart buttons from the dashboard to build an order."],
+                "items": [],
             }
 
         items = []
@@ -108,9 +119,155 @@ def build_chat_response(action):
             ],
         }
 
+    if action == "checkout_help":
+        return {
+            "title": "Checkout help",
+            "message": "Add products to the cart and click Checkout Now to place the order.",
+            "items": [
+                "Step 1: choose a product and quantity",
+                "Step 2: click Add To Cart",
+                "Step 3: review the cart summary",
+                "Step 4: click Checkout Now",
+            ],
+        }
+
+    if action == "show_offers":
+        return {
+            "title": "Today's offers",
+            "message": "Simple sample offers for this demo store.",
+            "items": [
+                "Laptop: 5% instant discount on card payment",
+                "Phone: Free delivery + basic case included",
+                "Power Bank: 10% off with any phone purchase",
+                "USB-C Cable: Buy 2 for the price of 1",
+            ],
+        }
+
+    if action == "payment_help":
+        return {
+            "title": "Payment help",
+            "message": "You can complete orders using basic payment options.",
+            "items": [
+                "Cash on Delivery (COD)",
+                "UPI (GPay / PhonePe / Paytm)",
+                "Debit/Credit cards",
+            ],
+        }
+
+    if action == "return_help":
+        return {
+            "title": "Return and refund",
+            "message": "This demo store supports easy returns.",
+            "items": [
+                "Return window: within 7 days of delivery",
+                "Product should be in original condition",
+                "Refund processed in 3 to 5 working days",
+            ],
+        }
+
+    if action == "contact_help":
+        return {
+            "title": "Support contact",
+            "message": "You can reach support for order or product doubts.",
+            "items": [
+                "Email: support@ecomdemo.com",
+                "Phone: +91 90000 12345",
+                "Support time: 9 AM to 6 PM",
+            ],
+        }
+
+    if action == "show_status":
+        return {
+            "title": "Store status",
+            "message": "Here is the current dashboard status.",
+            "items": [
+                f"Products available: {overview['product_count']}",
+                f"Units in stock: {overview['available_units']}",
+                f"Items in cart: {overview['cart_items']}",
+                f"Cart total: Rs. {overview['cart_total']}",
+            ],
+        }
+
+    if message:
+        if message in ["show status", "status", "overview"]:
+            return build_chat_response(action="show_status")
+
+        if message in ["show products", "products", "catalog"]:
+            return build_chat_response(action="show_products")
+
+        if message in ["show cart", "cart"]:
+            return build_chat_response(action="show_cart")
+
+        if message in ["cheapest product", "best value", "budget item"]:
+            return build_chat_response(action="show_best_value")
+
+        if message in ["delivery help", "delivery", "shipping"]:
+            return build_chat_response(action="delivery_help")
+
+        if message in ["checkout help", "checkout"]:
+            return build_chat_response(action="checkout_help")
+
+        if message in ["payment options", "payment", "pay"]:
+            return build_chat_response(action="payment_help")
+
+        if message in ["return policy", "return", "refund"]:
+            return build_chat_response(action="return_help")
+
+        matched_product = find_product(products, message)
+        if matched_product:
+            return {
+                "title": matched_product["name"],
+                "message": f"Here are the current details for {matched_product['name']}.",
+                "items": [
+                    f"Price: Rs. {matched_product['price']}",
+                    f"Stock: {matched_product['stock']}",
+                    f"Delivery: {matched_product['delivery']}",
+                    f"Specs: {matched_product['specs']}",
+                ],
+            }
+
+        if any(word in message for word in ["status", "overview", "summary"]):
+            return build_chat_response(action="show_status")
+
+        if any(word in message for word in ["product", "products", "catalog", "items"]):
+            return build_chat_response(action="show_products")
+
+        if any(word in message for word in ["cart", "bag"]):
+            return build_chat_response(action="show_cart")
+
+        if any(word in message for word in ["cheap", "cheapest", "budget", "lowest"]):
+            return build_chat_response(action="show_best_value")
+
+        if any(word in message for word in ["delivery", "fast", "arrive", "shipping"]):
+            return build_chat_response(action="delivery_help")
+
+        if any(word in message for word in ["checkout", "order", "buy", "purchase"]):
+            return build_chat_response(action="checkout_help")
+
+        if any(word in message for word in ["offer", "offers", "discount", "deal"]):
+            return build_chat_response(action="show_offers")
+
+        if any(word in message for word in ["payment", "pay", "upi", "cod", "card"]):
+            return build_chat_response(action="payment_help")
+
+        if any(word in message for word in ["return", "refund", "replace", "replacement"]):
+            return build_chat_response(action="return_help")
+
+        if any(word in message for word in ["contact", "support", "help desk", "customer care"]):
+            return build_chat_response(action="contact_help")
+
+        return {
+            "title": "Assistant",
+            "message": "I answer simple e-commerce queries using basic keyword matching.",
+            "items": [
+                "Try: show status, show products, show cart, payment options.",
+                "Or type a product name (e.g. laptop, power bank, smartwatch).",
+            ],
+        }
+
     return {
         "title": "Assistant",
-        "message": "Choose one of the quick action buttons to explore the store.",
+        "message": "Choose a quick option or type your doubt.",
         "items": [],
     }
 
@@ -225,7 +382,8 @@ def checkout():
 def chatbot():
     payload = request.get_json(silent=True) or {}
     action = payload.get("action", "")
-    return jsonify(build_chat_response(action))
+    message = payload.get("message", "")
+    return jsonify(build_chat_response(action=action, message=message))
 
 
 if __name__ == "__main__":

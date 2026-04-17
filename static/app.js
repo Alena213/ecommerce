@@ -1,36 +1,86 @@
+window.__INITIAL_DATA__ = window.__INITIAL_DATA__ || {
+    products: [],
+    cart: [],
+    overview: {},
+};
+
 const state = {
     products: window.__INITIAL_DATA__.products || [],
     cart: window.__INITIAL_DATA__.cart || [],
     overview: window.__INITIAL_DATA__.overview || {},
 };
 
-const statusText = document.getElementById("status-text");
-const cartList = document.getElementById("cart-list");
-const cartCountChip = document.getElementById("cart-count-chip");
-const cartTotalText = document.getElementById("cart-total-text");
-const chatStream = document.getElementById("chat-stream");
-const chatbotPanel = document.getElementById("chatbot-panel");
+function $(id) {
+    return document.getElementById(id);
+}
+
+const statusText = $("status-text");
+const cartList = $("cart-list");
+const cartCountChip = $("cart-count-chip");
+const cartTotalText = $("cart-total-text");
+const chatStream = $("chat-stream");
+const assistantSection = $("assistant-section");
+const chatForm = $("chat-form");
+const chatInput = $("chat-input");
+const checkoutBtn = $("checkout-btn");
 
 function currency(value) {
     return `Rs. ${value}`;
 }
 
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function cssEscape(value) {
+    if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+        return CSS.escape(value);
+    }
+    return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 function setStatus(message, isError = false) {
+    if (!statusText) {
+        return;
+    }
     statusText.textContent = message;
-    statusText.style.color = isError ? "#992f2f" : "";
+    statusText.style.color = isError ? "#b42318" : "";
 }
 
 function updateOverview(overview) {
     state.overview = overview;
-    document.getElementById("overview-product-count").textContent = overview.product_count;
-    document.getElementById("overview-available-units").textContent = overview.available_units;
-    document.getElementById("overview-cart-items").textContent = overview.cart_items;
-    document.getElementById("overview-cart-total").textContent = currency(overview.cart_total);
-    cartCountChip.textContent = `${overview.cart_items} items`;
-    cartTotalText.textContent = currency(overview.cart_total);
+    const productCount = $("overview-product-count");
+    const availableUnits = $("overview-available-units");
+    const cartItems = $("overview-cart-items");
+    const cartTotal = $("overview-cart-total");
+    if (productCount) {
+        productCount.textContent = overview.product_count;
+    }
+    if (availableUnits) {
+        availableUnits.textContent = overview.available_units;
+    }
+    if (cartItems) {
+        cartItems.textContent = overview.cart_items;
+    }
+    if (cartTotal) {
+        cartTotal.textContent = currency(overview.cart_total);
+    }
+    if (cartCountChip) {
+        cartCountChip.textContent = `${overview.cart_items} items`;
+    }
+    if (cartTotalText) {
+        cartTotalText.textContent = currency(overview.cart_total);
+    }
 }
 
 function renderCart() {
+    if (!cartList) {
+        return;
+    }
     if (!state.cart.length) {
         cartList.innerHTML = `<p class="empty-copy">The cart is empty. Add products from the dashboard to start an order.</p>`;
         return;
@@ -40,8 +90,8 @@ function renderCart() {
         .map(
             (item) => `
                 <article class="cart-item">
-                    <strong>${item.product}</strong>
-                    <span>Quantity: ${item.qty}</span>
+                    <strong>${escapeHtml(item.product)}</strong>
+                    <span>Quantity: ${escapeHtml(item.qty)}</span>
                 </article>
             `
         )
@@ -52,9 +102,10 @@ function updateProductStocks(products) {
     state.products = products;
 
     products.forEach((product) => {
-        const stockTarget = document.querySelector(`[data-stock="${product.name}"]`);
-        const card = document.querySelector(`[data-product-card="${product.name}"]`);
-        const addButton = document.querySelector(`[data-add-product="${product.name}"]`);
+        const safe = cssEscape(product.name);
+        const stockTarget = document.querySelector(`[data-stock="${safe}"]`);
+        const card = document.querySelector(`[data-product-card="${safe}"]`);
+        const addButton = document.querySelector(`[data-add-product="${safe}"]`);
 
         if (stockTarget) {
             stockTarget.textContent = product.stock;
@@ -62,7 +113,9 @@ function updateProductStocks(products) {
 
         if (card) {
             const stockBadge = card.querySelector(".stock-badge");
-            stockBadge.classList.toggle("out", product.stock === 0);
+            if (stockBadge) {
+                stockBadge.classList.toggle("out", product.stock === 0);
+            }
         }
 
         if (addButton) {
@@ -83,7 +136,7 @@ async function refreshDashboard() {
 }
 
 async function addToCart(productName) {
-    const select = document.querySelector(`[data-qty-select="${productName}"]`);
+    const select = document.querySelector(`[data-qty-select="${cssEscape(productName)}"]`);
     const qty = Number(select ? select.value : 1);
 
     const response = await fetch("/add", {
@@ -116,22 +169,53 @@ async function checkout() {
     await refreshDashboard();
 }
 
+function scrollToAssistant() {
+    if (assistantSection) {
+        assistantSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+}
+
 function appendChatMessage(title, message, items = [], type = "bot") {
+    if (!chatStream) {
+        return;
+    }
+
     const wrapper = document.createElement("article");
     wrapper.className = `chat-message ${type}`;
 
-    const listMarkup = items.length
-        ? `<ul>${items.map((item) => `<li>${item}</li>`).join("")}</ul>`
-        : "";
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    wrapper.appendChild(heading);
 
-    wrapper.innerHTML = `
-        <h3>${title}</h3>
-        <p>${message}</p>
-        ${listMarkup}
-    `;
+    const paragraph = document.createElement("p");
+    paragraph.textContent = message;
+    wrapper.appendChild(paragraph);
+
+    if (items.length) {
+        const list = document.createElement("ul");
+        items.forEach((item) => {
+            const li = document.createElement("li");
+            li.textContent = item;
+            list.appendChild(li);
+        });
+        wrapper.appendChild(list);
+    }
 
     chatStream.appendChild(wrapper);
     chatStream.scrollTop = chatStream.scrollHeight;
+}
+
+async function parseJsonResponse(response) {
+    const text = await response.text();
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        return {
+            title: "Assistant",
+            message: "Unexpected reply from server. Check that Flask is running and try again.",
+            items: [text.slice(0, 200)],
+        };
+    }
 }
 
 async function runChatAction(action) {
@@ -140,51 +224,147 @@ async function runChatAction(action) {
         show_cart: "Show cart",
         show_best_value: "Suggest budget item",
         delivery_help: "Delivery help",
+        checkout_help: "Checkout help",
+        payment_help: "Payment options",
+        return_help: "Return policy",
+        show_status: "Store status",
+        show_offers: "Today's offers",
     };
 
-    openChatbot();
+    scrollToAssistant();
     appendChatMessage("You selected", labels[action] || "Quick action", [], "user");
 
-    const response = await fetch("/chatbot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+    if (!action) {
+        appendChatMessage(
+            "Assistant",
+            "That button is missing an action. Check data-chat-action in index.html.",
+            [],
+            "bot"
+        );
+        return;
+    }
+
+    try {
+        const response = await fetch("/chatbot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action }),
+        });
+
+        const result = await parseJsonResponse(response);
+
+        if (!response.ok) {
+            appendChatMessage(
+                "Assistant",
+                result.message || "Request failed.",
+                Array.isArray(result.items) ? result.items : [],
+                "bot"
+            );
+            return;
+        }
+
+        appendChatMessage(
+            result.title || "Assistant",
+            result.message || "No message returned.",
+            Array.isArray(result.items) ? result.items : []
+        );
+    } catch (error) {
+        appendChatMessage(
+            "Assistant",
+            "Could not reach the server. Run python app.py and refresh this page.",
+            [],
+            "bot"
+        );
+    }
+}
+
+async function sendChatMessage(message) {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+        return;
+    }
+
+    scrollToAssistant();
+    appendChatMessage("You asked", trimmedMessage, [], "user");
+
+    try {
+        const response = await fetch("/chatbot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: trimmedMessage }),
+        });
+
+        const result = await parseJsonResponse(response);
+
+        if (!response.ok) {
+            appendChatMessage(
+                "Assistant",
+                result.message || "Request failed.",
+                Array.isArray(result.items) ? result.items : [],
+                "bot"
+            );
+            return;
+        }
+
+        appendChatMessage(
+            result.title || "Assistant",
+            result.message || "No message returned.",
+            Array.isArray(result.items) ? result.items : []
+        );
+    } catch (error) {
+        appendChatMessage(
+            "Assistant",
+            "Could not reach the server. Run python app.py and refresh this page.",
+            [],
+            "bot"
+        );
+    }
+}
+
+function init() {
+    document.querySelectorAll("[data-add-product]").forEach((button) => {
+        button.addEventListener("click", () => addToCart(button.getAttribute("data-add-product")));
     });
 
-    const result = await response.json();
-    appendChatMessage(result.title, result.message, result.items || []);
-}
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener("click", checkout);
+    }
 
-function openChatbot() {
-    chatbotPanel.classList.add("open");
-    chatbotPanel.setAttribute("aria-hidden", "false");
-}
-
-function closeChatbot() {
-    chatbotPanel.classList.remove("open");
-    chatbotPanel.setAttribute("aria-hidden", "true");
-}
-
-document.querySelectorAll("[data-add-product]").forEach((button) => {
-    button.addEventListener("click", () => addToCart(button.dataset.addProduct));
-});
-
-document.getElementById("checkout-btn").addEventListener("click", checkout);
-document.getElementById("chatbot-toggle").addEventListener("click", openChatbot);
-document.getElementById("open-chatbot-hero").addEventListener("click", openChatbot);
-document.getElementById("close-chatbot").addEventListener("click", closeChatbot);
-
-document.querySelectorAll(".helper-action").forEach((button) => {
-    button.addEventListener("click", () => runChatAction(button.dataset.chatAction));
-});
-
-document.querySelectorAll("[data-scroll-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-        const target = document.getElementById(button.dataset.scrollTarget);
-        if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.body.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-chat-action]");
+        if (!target) {
+            return;
+        }
+        const action = target.getAttribute("data-chat-action");
+        if (action) {
+            runChatAction(action);
         }
     });
-});
 
-renderCart();
+    if (chatForm && chatInput) {
+        chatForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const message = chatInput.value;
+            chatInput.value = "";
+            await sendChatMessage(message);
+        });
+    }
+
+    document.querySelectorAll("[data-scroll-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const targetId = button.getAttribute("data-scroll-target");
+            const target = targetId ? document.getElementById(targetId) : null;
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    });
+
+    renderCart();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}

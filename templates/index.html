@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ecom Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>ShopEase — E‑commerce Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=4">
 </head>
 <body>
     <div class="page-shell">
         <header class="hero">
             <div class="hero-copy">
-                <h1>Website-ready shopping dashboard</h1>
+                <p class="site-tagline">Shopping website</p>
+                <h1>Shop smarter with a simple store assistant</h1>
                 <p class="hero-text">
-                    Browse products, manage the cart, review customer details, and trigger assistant responses with buttons instead of typing commands one by one.
+                    Pick a product, add it to your cart, then use the assistant below for quick answers or type your own question.
                 </p>
                 <div class="hero-actions">
-                    <button class="primary-btn" data-scroll-target="products-section">Browse Products</button>
-                    <button class="secondary-btn" id="open-chatbot-hero">Open Chatbot</button>
+                    <button type="button" class="primary-btn" data-scroll-target="products-section">Browse products</button>
+                    <button type="button" class="secondary-btn" data-scroll-target="assistant-section">Open assistant</button>
                 </div>
             </div>
             <div class="hero-stats">
@@ -46,7 +47,7 @@
                         <p class="panel-kicker">Storefront</p>
                         <h2>Product Dashboard</h2>
                     </div>
-                    <span class="chip">Button-based shopping flow</span>
+                    <span class="chip">Live stock &amp; cart</span>
                 </div>
 
                 <div class="product-grid" id="product-grid">
@@ -113,8 +114,7 @@
             <section class="panel">
                 <div class="panel-heading">
                     <div>
-                        <p class="panel-kicker">Customer</p>
-                        <h2>Profile Snapshot</h2>
+                        <h2 class="customer-heading">CUSTOMER</h2>
                     </div>
                 </div>
                 <div class="profile-list">
@@ -125,49 +125,48 @@
                 </div>
             </section>
 
-            <section class="panel">
+            <section class="panel panel-wide assistant-panel" id="assistant-section">
                 <div class="panel-heading">
                     <div>
-                        <h2>Dashboard Actions</h2>
+                        <p class="panel-kicker">Assistant</p>
+                        <h2>Shopping chatbot</h2>
                     </div>
                 </div>
-                <div class="action-list">
-                    <button class="secondary-btn helper-action" data-chat-action="show_products">Show all products</button>
-                    <button class="secondary-btn helper-action" data-chat-action="show_cart">Show cart summary</button>
-                    <button class="secondary-btn helper-action" data-chat-action="show_best_value">Suggest budget item</button>
-                    <button class="secondary-btn helper-action" data-chat-action="delivery_help">Fast delivery help</button>
+
+                <div class="chat-stream" id="chat-stream" role="log" aria-live="polite">
+                    <article class="chat-message bot">
+                        <p class="chat-welcome-label">WELCOME</p>
+                        <h3>How can I help you?</h3>
+                    </article>
                 </div>
+
+                <div class="chat-actions" id="chat-quick-actions">
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_help">Help</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_status">Status</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_products">Products</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_cart">Cart</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_best_value">Budget pick</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="delivery_help">Delivery</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="checkout_help">Checkout</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="payment_help">Payment</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="return_help">Returns</button>
+                    <button type="button" class="chip-btn helper-action" data-chat-action="show_offers">Offers</button>
+                </div>
+
+                <form class="chat-input-row" id="chat-form">
+                    <label class="sr-only" for="chat-input">Your question</label>
+                    <input
+                        type="text"
+                        id="chat-input"
+                        name="chat-input"
+                        placeholder="Type your question (e.g. show cart, payment options, power bank)…"
+                        autocomplete="off"
+                    >
+                    <button type="submit" class="primary-btn">Send</button>
+                </form>
             </section>
         </main>
     </div>
-
-    <button class="chatbot-toggle" id="chatbot-toggle" aria-label="Open chatbot">
-        Chatbot
-    </button>
-
-    <aside class="chatbot-panel" id="chatbot-panel" aria-hidden="true">
-        <div class="chatbot-header">
-            <div>
-                <p class="panel-kicker">Right-side Assistant</p>
-                <h2>Store Chatbot</h2>
-            </div>
-            <button class="close-btn" id="close-chatbot" aria-label="Close chatbot">&times;</button>
-        </div>
-
-        <div class="chat-stream" id="chat-stream">
-            <article class="chat-message bot">
-                <h3>Welcome</h3>
-                <p>Use the quick buttons below to see responses instantly. No typing is needed.</p>
-            </article>
-        </div>
-
-        <div class="chat-actions">
-            <button class="secondary-btn helper-action" data-chat-action="show_products">Products</button>
-            <button class="secondary-btn helper-action" data-chat-action="show_cart">Cart</button>
-            <button class="secondary-btn helper-action" data-chat-action="show_best_value">Budget Pick</button>
-            <button class="secondary-btn helper-action" data-chat-action="delivery_help">Delivery</button>
-        </div>
-    </aside>
 
     <script>
         window.__INITIAL_DATA__ = {
@@ -176,6 +175,6 @@
             overview: {{ overview|tojson }}
         };
     </script>
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=4"></script>
 </body>
 </html>
