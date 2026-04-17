@@ -1,46 +1,59 @@
-# E-commerce Dashboard Website
+# E-commerce Dashboard
 
-This project now runs as a website dashboard instead of a CLI-first flow.
+This project is a small e-commerce application with:
 
-## What changed
+- a Flask backend
+- a dashboard-style website
+- an optional CLI client for the original command-based flow
 
-- The existing Flask backend still powers products, cart, and checkout.
-- A new dashboard homepage is available at `http://127.0.0.1:5000/`.
-- Product browsing, cart management, and checkout now happen through buttons and cards.
-- A right-side chatbot panel is included with an open button and clickable quick actions.
-- The chatbot does not require typing. It shows responses from predefined dashboard-friendly buttons.
+## Project structure
 
-## Run the project
+- `app.py`: Flask app and API routes
+- `templates/index.html`: dashboard markup
+- `static/styles.css`: dashboard styling
+- `static/app.js`: dashboard interactivity
+- `data.json`: sample product and cart data
+- `main.py`: optional CLI client
 
-1. Install dependencies:
+## Run the website
 
-```bash
-pip install flask
+1. Open the project folder in VS Code:
+   `C:\Users\ALENA\Downloads\Ecommerce-main`
+2. Open a terminal in VS Code.
+3. Run:
+
+```powershell
+.\ecom_env\Scripts\python.exe app.py
 ```
 
-2. Start the website:
+4. Open:
+   [http://127.0.0.1:5000/](http://127.0.0.1:5000/)
 
-```bash
+If your virtual environment is already activated, this also works:
+
+```powershell
 python app.py
 ```
 
-3. Open this URL in your browser:
+## Run the CLI version
 
-```text
-http://127.0.0.1:5000/
+Start the Flask app first, then in another terminal run:
+
+```powershell
+python main.py
 ```
 
-## Website features
+## Dashboard features
 
-- Dashboard hero section with summary cards
-- Product cards with quantity selector and add-to-cart button
-- Cart summary panel with checkout button
-- Profile snapshot section
-- Mentor-friendly dashboard shortcuts for common actions
-- Right-side chatbot drawer with floating open button
+- product cards with quantity selection
+- cart summary with checkout
+- profile snapshot
+- quick dashboard actions
+- right-side chatbot drawer with clickable prompts
 
-## Available API routes
+## API routes
 
+- `GET /`
 - `GET /products`
 - `GET /cart`
 - `POST /add`
@@ -50,5 +63,5 @@ http://127.0.0.1:5000/
 
 ## Notes
 
-- `data.json` stores products and cart data.
-- The old `main.py` CLI is still present, but the website in `app.py` is now the main user experience.
+- The main user experience is the website in `app.py`.
+- `data.json` can be reset any time if you want a clean sample cart.
