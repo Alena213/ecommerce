@@ -1,176 +1,167 @@
-"""
-=============================================================================
-FILE: app.py
-PROJECT: E-Commerce CLI Chatbot (Phase 2)
-PURPOSE: Flask-based REST API backend for the e-commerce system.
-
-This module handles all server-side operations:
-  - Serving product data
-  - Managing shopping cart (add, view)
-  - Checkout processing
-  - JSON-based persistence (data.json)
-
-USAGE:
-  Run this file first before starting main.py:
-    $ python app.py
-
-  The server starts at: http://127.0.0.1:5000
-=============================================================================
-"""
-
-from flask import Flask, jsonify, request
 import json
 import os
 
-# ============================================================
-# APP INITIALIZATION
-# ============================================================
-# Create a Flask application instance.
-# __name__ tells Flask where to look for resources.
+from flask import Flask, jsonify, render_template, request
+
+
 app = Flask(__name__)
 
-# ============================================================
-# HELPER: Resolve data.json path relative to this file
-# ============================================================
-# This fix ensures data.json is always found regardless of
-# which directory the user launches the script from.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FILE = os.path.join(BASE_DIR, "data.json")
 
 
-# ============================================================
-# HELPER: load()
-# ============================================================
 def load():
-    """
-    Read and parse the JSON data file (data.json).
-
-    Returns:
-        dict: The full database containing:
-              - "products" (list): all product objects
-              - "cart"     (list): current items in cart
-
-    Raises:
-        FileNotFoundError: if data.json is missing
-        json.JSONDecodeError: if data.json is malformed
-    """
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+    with open(DATA_FILE, "r", encoding="utf-8") as file:
+        return json.load(file)
 
 
-# ============================================================
-# HELPER: save(data)
-# ============================================================
 def save(data):
-    """
-    Write the given data dictionary back to data.json.
-
-    This is called after any state-mutating operation
-    (add to cart, checkout) to persist changes.
-
-    Args:
-        data (dict): The full database dict to serialize and save.
-    """
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+    with open(DATA_FILE, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4)
 
 
-# ============================================================
-# ROUTE: GET /products
-# ============================================================
-@app.route('/products')
-def products():
-    """
-    Return all products from the data store.
+def build_cart_summary(db):
+    price_map = {product["name"]: product["price"] for product in db["products"]}
+    item_count = 0
+    total = 0
 
-    Method  : GET
-    Endpoint: /products
-    Auth    : None
+    for item in db["cart"]:
+        qty = int(item["qty"])
+        item_count += qty
+        total += price_map.get(item["product"], 0) * qty
 
-    Returns:
-        JSON array of product objects, each with:
-          - name     (str)
-          - price    (int)
-          - stock    (int)
-          - delivery (str)
-          - specs    (str)
+    return {"item_count": item_count, "total": total}
 
-    Example Response:
-        [
-          {"name": "Laptop", "price": 50000, "stock": 5, ...},
-          ...
+
+def build_overview(db):
+    cart_summary = build_cart_summary(db)
+    return {
+        "product_count": len(db["products"]),
+        "available_units": sum(product["stock"] for product in db["products"]),
+        "cart_items": cart_summary["item_count"],
+        "cart_total": cart_summary["total"],
+    }
+
+
+def build_chat_response(action):
+    db = load()
+    products = db["products"]
+    summary = build_cart_summary(db)
+
+    if action == "show_products":
+        lines = [
+            f"{product['name']}: Rs. {product['price']} | Stock {product['stock']} | Delivery {product['delivery']}"
+            for product in products
         ]
-    """
+        return {
+            "title": "Available products",
+            "message": "Here is the current product catalog.",
+            "items": lines,
+        }
+
+    if action == "show_best_value":
+        cheapest = min(products, key=lambda product: product["price"])
+        return {
+            "title": "Best budget pick",
+            "message": f"{cheapest['name']} is the lowest-priced item at Rs. {cheapest['price']}.",
+            "items": [
+                f"Specs: {cheapest['specs']}",
+                f"Delivery: {cheapest['delivery']}",
+                f"Stock left: {cheapest['stock']}",
+            ],
+        }
+
+    if action == "show_cart":
+        if not db["cart"]:
+            return {
+                "title": "Cart status",
+                "message": "Your cart is empty right now.",
+                "items": ["Use the Add to Cart buttons from the dashboard to build an order."],
+            }
+
+        items = []
+        for item in db["cart"]:
+            product = next(
+                (product for product in products if product["name"] == item["product"]),
+                None,
+            )
+            price = product["price"] if product else 0
+            items.append(
+                f"{item['product']} x{item['qty']} = Rs. {price * int(item['qty'])}"
+            )
+
+        items.append(f"Total amount: Rs. {summary['total']}")
+        return {
+            "title": "Cart status",
+            "message": f"You currently have {summary['item_count']} item(s) in the cart.",
+            "items": items,
+        }
+
+    if action == "delivery_help":
+        fastest = min(products, key=lambda product: int(product["delivery"].split()[0]))
+        return {
+            "title": "Delivery help",
+            "message": f"{fastest['name']} has the fastest delivery right now.",
+            "items": [
+                f"Expected delivery: {fastest['delivery']}",
+                "Dashboard tip: compare the delivery badges on each product card before adding.",
+            ],
+        }
+
+    return {
+        "title": "Assistant",
+        "message": "Choose one of the quick action buttons to explore the store.",
+        "items": [],
+    }
+
+
+@app.route("/")
+def index():
+    db = load()
+    return render_template(
+        "index.html",
+        products=db["products"],
+        cart=db["cart"],
+        overview=build_overview(db),
+        profile={
+            "name": "Alena",
+            "phone": "9999999999",
+            "email": "alena@example.com",
+            "orders": 3,
+        },
+    )
+
+
+@app.route("/dashboard-data")
+def dashboard_data():
+    db = load()
+    return jsonify(
+        {
+            "products": db["products"],
+            "cart": db["cart"],
+            "overview": build_overview(db),
+            "cart_summary": build_cart_summary(db),
+        }
+    )
+
+
+@app.route("/products")
+def products():
     return jsonify(load()["products"])
 
 
-# ============================================================
-# ROUTE: GET /cart
-# ============================================================
-@app.route('/cart')
+@app.route("/cart")
 def cart():
-    """
-    Return the current contents of the shopping cart.
-
-    Method  : GET
-    Endpoint: /cart
-    Auth    : None
-
-    Returns:
-        JSON array of cart item objects, each with:
-          - product (str): product name
-          - qty     (int): quantity added
-
-    Example Response:
-        [{"product": "Laptop", "qty": 1}]
-    """
     return jsonify(load()["cart"])
 
 
-# ============================================================
-# ROUTE: POST /add
-# ============================================================
-@app.route('/add', methods=['POST'])
+@app.route("/add", methods=["POST"])
 def add():
-    """
-    Add a product to the cart after validating stock.
+    data = request.get_json(silent=True) or {}
 
-    Method  : POST
-    Endpoint: /add
-    Auth    : None
-    Body    : JSON object with:
-                - product (str): name of the product to add
-                - qty     (int): quantity to add
-
-    Business Logic:
-        1. Find the product by name (case-insensitive match).
-        2. Check if sufficient stock exists.
-        3. Decrement stock and append item to cart.
-        4. Persist changes.
-
-    Returns:
-        JSON object with key "msg":
-          - "added to cart"      → success
-          - "not enough stock"   → stock < requested qty
-          - "product not found"  → no matching product name
-          - "invalid request"    → missing/bad JSON body (BUG FIX)
-
-    Example Request Body:
-        {"product": "Laptop", "qty": 2} -> key:value pair in the request body
-    """
-    # BUG FIX: Guard against missing or non-JSON request body
-    # Original code would crash with AttributeError if body was absent.
-    if not request.json:
-        return jsonify({"msg": "invalid request"}), 400
-
-    data = request.json
-
-    # BUG FIX: Validate required fields exist in the request body.
     if "product" not in data or "qty" not in data:
         return jsonify({"msg": "missing 'product' or 'qty' in request"}), 400
 
-    # BUG FIX: Ensure qty is a positive integer.
-    # Original code would allow qty=0 or negative values.
     try:
         qty = int(data["qty"])
         if qty <= 0:
@@ -180,59 +171,62 @@ def add():
 
     db = load()
 
-    for p in db["products"]:
-        if p["name"].lower() == data["product"].lower():
-            if p["stock"] >= qty:  #5 >= 2
-                p["stock"] -= qty  # 5-2 = 3  qty is deducted from stock
-                # Store product name and validated qty in cart
-                db["cart"].append({"product": p["name"], "qty": qty})
-                save(db)
-                return jsonify({"msg": "added to cart"})
-            return jsonify({"msg": "not enough stock"})
+    for product in db["products"]:
+        if product["name"].lower() == str(data["product"]).lower():
+            if product["stock"] < qty:
+                return jsonify({"msg": "not enough stock"}), 400
 
-    return jsonify({"msg": "product not found"})
+            product["stock"] -= qty
+            existing = next(
+                (
+                    item
+                    for item in db["cart"]
+                    if item["product"].lower() == product["name"].lower()
+                ),
+                None,
+            )
+
+            if existing:
+                existing["qty"] += qty
+            else:
+                db["cart"].append({"product": product["name"], "qty": qty})
+
+            save(db)
+            return jsonify(
+                {
+                    "msg": "added to cart",
+                    "cart_summary": build_cart_summary(db),
+                    "overview": build_overview(db),
+                }
+            )
+
+    return jsonify({"msg": "product not found"}), 404
 
 
-# ============================================================
-# ROUTE: GET /checkout
-# ============================================================
-@app.route('/checkout')
+@app.route("/checkout")
 def checkout():
-    """
-    Process checkout by clearing the cart.
-
-    Method  : GET
-    Endpoint: /checkout
-    Auth    : None
-
-    Business Logic:
-        1. Load current database.
-        2. Verify cart is not empty before clearing (BUG FIX).
-        3. Reset cart to empty list.
-        4. Persist changes.
-
-    Returns:
-        JSON object with key "msg":
-          - "order placed"    → success
-          - "cart is empty"   → nothing to check out (BUG FIX)
-
-    Example Response:
-        {"msg": "order placed"}
-    """
     db = load()
 
-    # BUG FIX: Original code would silently "checkout" with an empty cart.
-    # Now we return a clear message if cart is empty.
     if not db["cart"]:
-        return jsonify({"msg": "cart is empty"})
+        return jsonify({"msg": "cart is empty"}), 400
 
     db["cart"] = []
     save(db)
-    return jsonify({"msg": "order placed"})
+    return jsonify(
+        {
+            "msg": "order placed",
+            "cart_summary": build_cart_summary(db),
+            "overview": build_overview(db),
+        }
+    )
 
 
-# ============================================================
-# ENTRY POINT
-# ============================================================
-if __name__ == '__main__': # This block ensures the server only starts when this file is run directly.
+@app.route("/chatbot", methods=["POST"])
+def chatbot():
+    payload = request.get_json(silent=True) or {}
+    action = payload.get("action", "")
+    return jsonify(build_chat_response(action))
+
+
+if __name__ == "__main__":
     app.run(debug=True)
