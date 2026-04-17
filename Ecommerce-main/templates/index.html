@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecom Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">E-commerce control center</p>
+                <h1>Turn the CLI project into a website-ready shopping dashboard.</h1>
+                <p class="hero-text">
+                    Browse products, manage the cart, review customer details, and trigger assistant responses with buttons instead of typing commands one by one.
+                </p>
+                <div class="hero-actions">
+                    <button class="primary-btn" data-scroll-target="products-section">Browse Products</button>
+                    <button class="secondary-btn" id="open-chatbot-hero">Open Chatbot</button>
+                </div>
+            </div>
+            <div class="hero-stats">
+                <article class="stat-card">
+                    <span>Products</span>
+                    <strong id="overview-product-count">{{ overview.product_count }}</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Available Units</span>
+                    <strong id="overview-available-units">{{ overview.available_units }}</strong>
+                </article>
+                <article class="stat-card">
+                    <span>Cart Items</span>
+                    <strong id="overview-cart-items">{{ overview.cart_items }}</strong>
+                </article>
+                <article class="stat-card accent">
+                    <span>Cart Total</span>
+                    <strong id="overview-cart-total">Rs. {{ overview.cart_total }}</strong>
+                </article>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <section class="panel panel-wide" id="products-section">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">Storefront</p>
+                        <h2>Product Dashboard</h2>
+                    </div>
+                    <span class="chip">Button-based shopping flow</span>
+                </div>
+
+                <div class="product-grid" id="product-grid">
+                    {% for product in products %}
+                    <article class="product-card" data-product-card="{{ product.name }}">
+                        <div class="product-top">
+                            <span class="delivery-badge">{{ product.delivery }}</span>
+                            <span class="stock-badge {% if product.stock == 0 %}out{% endif %}">
+                                Stock: <span data-stock="{{ product.name }}">{{ product.stock }}</span>
+                            </span>
+                        </div>
+                        <h3>{{ product.name }}</h3>
+                        <p class="specs">{{ product.specs }}</p>
+                        <div class="price-row">
+                            <strong>Rs. {{ product.price }}</strong>
+                        </div>
+                        <div class="qty-picker">
+                            <label for="qty-{{ loop.index }}">Qty</label>
+                            <select id="qty-{{ loop.index }}" data-qty-select="{{ product.name }}">
+                                {% for qty in range(1, 6) %}
+                                <option value="{{ qty }}">{{ qty }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="primary-btn add-btn" data-add-product="{{ product.name }}">
+                            Add To Cart
+                        </button>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">Live Summary</p>
+                        <h2>Cart Overview</h2>
+                    </div>
+                    <span class="chip" id="cart-count-chip">{{ overview.cart_items }} items</span>
+                </div>
+
+                <div id="cart-list" class="cart-list">
+                    {% if cart %}
+                        {% for item in cart %}
+                        <article class="cart-item">
+                            <strong>{{ item.product }}</strong>
+                            <span>Quantity: {{ item.qty }}</span>
+                        </article>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-copy">The cart is empty. Add products from the dashboard to start an order.</p>
+                    {% endif %}
+                </div>
+
+                <div class="total-row">
+                    <span>Total</span>
+                    <strong id="cart-total-text">Rs. {{ overview.cart_total }}</strong>
+                </div>
+
+                <button class="primary-btn full-width" id="checkout-btn">Checkout Now</button>
+                <p class="status-text" id="status-text">Ready for action.</p>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="panel-kicker">Customer</p>
+                        <h2>Profile Snapshot</h2>
+                    </div>
+                </div>
+                <div class="profile-list">
+                    <article><span>Name</span><strong>{{ profile.name }}</strong></article>
+                    <article><span>Phone</span><strong>{{ profile.phone }}</strong></article>
+                    <article><span>Email</span><strong>{{ profile.email }}</strong></article>
+                    <article><span>Orders</span><strong>{{ profile.orders }}</strong></article>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h2>Dashboard Actions</h2>
+                    </div>
+                </div>
+                <div class="action-list">
+                    <button class="secondary-btn helper-action" data-chat-action="show_products">Show all products</button>
+                    <button class="secondary-btn helper-action" data-chat-action="show_cart">Show cart summary</button>
+                    <button class="secondary-btn helper-action" data-chat-action="show_best_value">Suggest budget item</button>
+                    <button class="secondary-btn helper-action" data-chat-action="delivery_help">Fast delivery help</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <button class="chatbot-toggle" id="chatbot-toggle" aria-label="Open chatbot">
+        Chatbot
+    </button>
+
+    <aside class="chatbot-panel" id="chatbot-panel" aria-hidden="true">
+        <div class="chatbot-header">
+            <div>
+                <p class="panel-kicker">Right-side Assistant</p>
+                <h2>Store Chatbot</h2>
+            </div>
+            <button class="close-btn" id="close-chatbot" aria-label="Close chatbot">&times;</button>
+        </div>
+
+        <div class="chat-stream" id="chat-stream">
+            <article class="chat-message bot">
+                <h3>Welcome</h3>
+                <p>Use the quick buttons below to see responses instantly. No typing is needed.</p>
+            </article>
+        </div>
+
+        <div class="chat-actions">
+            <button class="secondary-btn helper-action" data-chat-action="show_products">Products</button>
+            <button class="secondary-btn helper-action" data-chat-action="show_cart">Cart</button>
+            <button class="secondary-btn helper-action" data-chat-action="show_best_value">Budget Pick</button>
+            <button class="secondary-btn helper-action" data-chat-action="delivery_help">Delivery</button>
+        </div>
+    </aside>
+
+    <script>
+        window.__INITIAL_DATA__ = {
+            products: {{ products|tojson }},
+            cart: {{ cart|tojson }},
+            overview: {{ overview|tojson }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
