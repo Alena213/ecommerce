@@ -22,14 +22,5 @@
             "specs": "Wireless"
         }
     ],
-    "cart": [
-        {
-            "product": "Laptop",
-            "qty": 1
-        },
-        {
-            "product": "Headphones",
-            "qty": 1
-        }
-    ]
+    "cart": []
 }
