@@ -10,7 +10,7 @@
         {
             "name": "Phone",
             "price": 20000,
-            "stock": 5,
+            "stock": 4,
             "delivery": "2 days",
             "specs": "6GB RAM"
         },
@@ -50,5 +50,10 @@
             "specs": "1m braided, 60W charging & data"
         }
     ],
-    "cart": []
+    "cart": [
+        {
+            "product": "Phone",
+            "qty": 1
+        }
+    ]
 }

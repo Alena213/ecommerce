@@ -187,9 +187,12 @@ function appendChatMessage(title, message, items = [], type = "bot") {
     heading.textContent = title;
     wrapper.appendChild(heading);
 
-    const paragraph = document.createElement("p");
-    paragraph.textContent = message;
-    wrapper.appendChild(paragraph);
+    const safeMessage = typeof message === "string" ? message.trim() : "";
+    if (safeMessage) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = safeMessage;
+        wrapper.appendChild(paragraph);
+    }
 
     if (items.length) {
         const list = document.createElement("ul");
@@ -265,7 +268,7 @@ async function runChatAction(action) {
 
         appendChatMessage(
             result.title || "Assistant",
-            result.message || "No message returned.",
+            result.message ?? "",
             Array.isArray(result.items) ? result.items : []
         );
     } catch (error) {
@@ -308,7 +311,7 @@ async function sendChatMessage(message) {
 
         appendChatMessage(
             result.title || "Assistant",
-            result.message || "No message returned.",
+            result.message ?? "",
             Array.isArray(result.items) ? result.items : []
         );
     } catch (error) {

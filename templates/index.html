@@ -8,6 +8,12 @@
 </head>
 <body>
     <div class="page-shell">
+        <nav class="top-nav" aria-label="Main sections">
+            <button type="button" class="top-nav-link" data-scroll-target="products-section">Products</button>
+            <button type="button" class="top-nav-link" data-scroll-target="inventory-section">Available Units</button>
+            <button type="button" class="top-nav-link" data-scroll-target="cart-section">Cart Items</button>
+        </nav>
+
         <header class="hero">
             <div class="hero-copy">
                 <p class="site-tagline">Shopping website</p>
@@ -20,24 +26,6 @@
                     <button type="button" class="secondary-btn" data-scroll-target="assistant-section">Open assistant</button>
                 </div>
             </div>
-            <div class="hero-stats">
-                <article class="stat-card">
-                    <span>Products</span>
-                    <strong id="overview-product-count">{{ overview.product_count }}</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Available Units</span>
-                    <strong id="overview-available-units">{{ overview.available_units }}</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Cart Items</span>
-                    <strong id="overview-cart-items">{{ overview.cart_items }}</strong>
-                </article>
-                <article class="stat-card accent">
-                    <span>Cart Total</span>
-                    <strong id="overview-cart-total">Rs. {{ overview.cart_total }}</strong>
-                </article>
-            </div>
         </header>
 
         <main class="dashboard-grid">
@@ -45,9 +33,28 @@
                 <div class="panel-heading">
                     <div>
                         <p class="panel-kicker">Storefront</p>
-                        <h2>Product Dashboard</h2>
+                        <h2>Product</h2>
                     </div>
                     <span class="chip">Live stock &amp; cart</span>
+                </div>
+
+                <div class="section-summary" id="inventory-section">
+                    <article class="summary-item">
+                        <span>Products</span>
+                        <strong id="overview-product-count">{{ overview.product_count }}</strong>
+                    </article>
+                    <article class="summary-item">
+                        <span>Available Units</span>
+                        <strong id="overview-available-units">{{ overview.available_units }}</strong>
+                    </article>
+                    <article class="summary-item">
+                        <span>Cart Items</span>
+                        <strong id="overview-cart-items">{{ overview.cart_items }}</strong>
+                    </article>
+                    <article class="summary-item">
+                        <span>Cart Total</span>
+                        <strong id="overview-cart-total">Rs. {{ overview.cart_total }}</strong>
+                    </article>
                 </div>
 
                 <div class="product-grid" id="product-grid">
@@ -80,7 +87,7 @@
                 </div>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="cart-section">
                 <div class="panel-heading">
                     <div>
                         <p class="panel-kicker">Live Summary</p>

@@ -115,7 +115,7 @@ def build_chat_response(action="", message=""):
             "message": f"{fastest['name']} has the fastest delivery right now.",
             "items": [
                 f"Expected delivery: {fastest['delivery']}",
-                "Dashboard tip: compare the delivery badges on each product card before adding.",
+                "Compare the delivery badges on each product card before adding.",
             ],
         }
 
@@ -134,7 +134,7 @@ def build_chat_response(action="", message=""):
     if action == "show_offers":
         return {
             "title": "Today's offers",
-            "message": "Simple sample offers for this demo store.",
+            "message": "",
             "items": [
                 "Laptop: 5% instant discount on card payment",
                 "Phone: Free delivery + basic case included",
@@ -157,7 +157,7 @@ def build_chat_response(action="", message=""):
     if action == "return_help":
         return {
             "title": "Return and refund",
-            "message": "This demo store supports easy returns.",
+            "message": "",
             "items": [
                 "Return window: within 7 days of delivery",
                 "Product should be in original condition",
@@ -179,7 +179,7 @@ def build_chat_response(action="", message=""):
     if action == "show_status":
         return {
             "title": "Store status",
-            "message": "Here is the current dashboard status.",
+            "message": "Here is the current status.",
             "items": [
                 f"Products available: {overview['product_count']}",
                 f"Units in stock: {overview['available_units']}",
@@ -258,7 +258,7 @@ def build_chat_response(action="", message=""):
 
         return {
             "title": "Assistant",
-            "message": "I answer simple e-commerce queries using basic keyword matching.",
+            "message": "Error!",
             "items": [
                 "Try: show status, show products, show cart, payment options.",
                 "Or type a product name (e.g. laptop, power bank, smartwatch).",
