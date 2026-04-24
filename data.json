@@ -3,7 +3,7 @@
         {
             "name": "Laptop",
             "price": 50000,
-            "stock": 2,
+            "stock": 1,
             "delivery": "3 days",
             "specs": "i5, 8GB RAM"
         },
@@ -17,7 +17,7 @@
         {
             "name": "Headphones",
             "price": 2000,
-            "stock": 11,
+            "stock": 10,
             "delivery": "1 day",
             "specs": "Wireless"
         },
@@ -53,6 +53,14 @@
     "cart": [
         {
             "product": "Phone",
+            "qty": 1
+        },
+        {
+            "product": "Laptop",
+            "qty": 1
+        },
+        {
+            "product": "Headphones",
             "qty": 1
         }
     ]
