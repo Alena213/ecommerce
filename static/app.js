@@ -82,18 +82,23 @@ function renderCart() {
         return;
     }
     if (!state.cart.length) {
-        cartList.innerHTML = `<p class="empty-copy">The cart is empty. Add products from the dashboard to start an order.</p>`;
+        cartList.innerHTML = `<p class="empty-copy">Cart is empty</p>`;
         return;
     }
 
     cartList.innerHTML = state.cart
         .map(
-            (item) => `
+            (item) => {
+                const product = state.products.find((entry) => entry.name === item.product);
+                const price = product ? product.price : 0;
+                return `
                 <article class="cart-item">
                     <strong>${escapeHtml(item.product)}</strong>
                     <span>Quantity: ${escapeHtml(item.qty)}</span>
+                    <span>Price: ${currency(price)}</span>
                 </article>
             `
+            }
         )
         .join("");
 }

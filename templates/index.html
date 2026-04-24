@@ -90,7 +90,6 @@
             <section class="panel" id="cart-section">
                 <div class="panel-heading">
                     <div>
-                        <p class="panel-kicker">Live Summary</p>
                         <h2>Cart</h2>
                     </div>
                     <span class="chip" id="cart-count-chip">{{ overview.cart_items }} items</span>
@@ -99,13 +98,15 @@
                 <div id="cart-list" class="cart-list">
                     {% if cart %}
                         {% for item in cart %}
+                        {% set matched = (products | selectattr("name", "equalto", item.product) | list | first) %}
                         <article class="cart-item">
                             <strong>{{ item.product }}</strong>
                             <span>Quantity: {{ item.qty }}</span>
+                            <span>Price: Rs. {{ matched.price if matched else 0 }}</span>
                         </article>
                         {% endfor %}
                     {% else %}
-                        <p class="empty-copy">The cart is empty. Add products from the dashboard to start an order.</p>
+                        <p class="empty-copy">Cart is empty</p>
                     {% endif %}
                 </div>
 

@@ -24,7 +24,7 @@
         {
             "name": "Power Bank",
             "price": 3000,
-            "stock": 15,
+            "stock": 13,
             "delivery": "2 days",
             "specs": "10000mAh, USB-C, 22.5W fast charge"
         },
@@ -38,30 +38,17 @@
         {
             "name": "Wireless Mouse",
             "price": 899,
-            "stock": 20,
+            "stock": 18,
             "delivery": "1 day",
             "specs": "Bluetooth, silent clicks, ergonomic"
         },
         {
             "name": "USB-C Cable",
             "price": 349,
-            "stock": 30,
+            "stock": 29,
             "delivery": "1 day",
             "specs": "1m braided, 60W charging & data"
         }
     ],
-    "cart": [
-        {
-            "product": "Phone",
-            "qty": 1
-        },
-        {
-            "product": "Laptop",
-            "qty": 1
-        },
-        {
-            "product": "Headphones",
-            "qty": 1
-        }
-    ]
+    "cart": []
 }
