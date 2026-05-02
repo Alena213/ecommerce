@@ -43,6 +43,9 @@ def build_overview(db):
     }
 
 
+BOT_STATE = {"product": None, "expecting": None}
+
+
 def find_product(products, query):
     query = query.lower()
     for product in products:
@@ -52,12 +55,17 @@ def find_product(products, query):
 
 
 def build_chat_response(action="", message=""):
+    global BOT_STATE
     db = load()
     products = db["products"]
     summary = build_cart_summary(db)
     overview = build_overview(db)
     action = (action or "").strip().lower()
     message = (message or "").strip().lower()
+
+    if action:
+        BOT_STATE["product"] = None
+        BOT_STATE["expecting"] = None
 
     if action == "show_products":
         lines = [
@@ -68,6 +76,22 @@ def build_chat_response(action="", message=""):
             "title": "Available products",
             "message": "Here is the current product catalog.",
             "items": lines,
+        }
+
+    if action == "do_checkout":
+        if not db["cart"]:
+            return {
+                "title": "Checkout",
+                "message": "Your cart is empty.",
+                "items": []
+            }
+        
+        db["cart"] = []
+        save(db)
+        return {
+            "title": "Checkout Successful",
+            "message": "Your order has been placed successfully!",
+            "items": []
         }
 
     if action == "show_best_value":
@@ -102,6 +126,10 @@ def build_chat_response(action="", message=""):
             )
 
         items.append(f"Total amount: Rs. {summary['total']}")
+        
+        BOT_STATE["expecting"] = "delete_confirmation"
+        items.append("Would you like to delete a product from the cart? (yes/no)")
+        
         return {
             "title": "Cart status",
             "message": f"You currently have {summary['item_count']} item(s) in the cart.",
@@ -189,6 +217,125 @@ def build_chat_response(action="", message=""):
         }
 
     if message:
+        if BOT_STATE["expecting"] == "confirmation":
+            if message in ["yes", "y", "sure", "ok", "order", "buy"]:
+                BOT_STATE["expecting"] = "quantity"
+                return {
+                    "title": "Quantity",
+                    "message": f"How many units of {BOT_STATE['product']} would you like to add?",
+                    "items": []
+                }
+            elif message in ["no", "n", "nope", "cancel"]:
+                BOT_STATE["product"] = None
+                BOT_STATE["expecting"] = None
+                return {
+                    "title": "Cancelled",
+                    "message": "Order cancelled. How else can I help you?",
+                    "items": []
+                }
+            else:
+                BOT_STATE["product"] = None
+                BOT_STATE["expecting"] = None
+
+        elif BOT_STATE["expecting"] == "quantity":
+            if message.isdigit():
+                qty = int(message)
+                product_name = BOT_STATE["product"]
+                
+                if qty <= 0:
+                    return {
+                        "title": "Invalid Quantity",
+                        "message": "Please enter a valid positive number for the quantity.",
+                        "items": []
+                    }
+                    
+                target_product = next((p for p in db["products"] if p["name"] == product_name), None)
+                if not target_product:
+                    BOT_STATE["product"] = None
+                    BOT_STATE["expecting"] = None
+                    return {"title": "Error", "message": "Product not found.", "items": []}
+                    
+                if target_product["stock"] < qty:
+                    return {
+                        "title": "Not Enough Stock",
+                        "message": f"Sorry, only {target_product['stock']} units available.",
+                        "items": []
+                    }
+                    
+                target_product["stock"] -= qty
+                existing = next((item for item in db["cart"] if item["product"] == product_name), None)
+                if existing:
+                    existing["qty"] += qty
+                else:
+                    db["cart"].append({"product": product_name, "qty": qty})
+                save(db)
+                
+                BOT_STATE["product"] = None
+                BOT_STATE["expecting"] = None
+                return {
+                    "title": "Success",
+                    "message": f"Added {qty} {product_name}(s) to your cart.",
+                    "items": ["Type 'show cart' to view your cart.", "Type 'checkout' to place your order."]
+                }
+            elif message in ["cancel", "no", "abort"]:
+                BOT_STATE["product"] = None
+                BOT_STATE["expecting"] = None
+                return {
+                    "title": "Cancelled",
+                    "message": "Order cancelled. How else can I help you?",
+                    "items": []
+                }
+            else:
+                return {
+                    "title": "Invalid Quantity",
+                    "message": "Please enter a number for the quantity, or type 'cancel'.",
+                    "items": []
+                }
+
+        elif BOT_STATE["expecting"] == "delete_confirmation":
+            if message in ["yes", "y", "sure", "ok"]:
+                BOT_STATE["expecting"] = "delete_product"
+                return {
+                    "title": "Delete Product",
+                    "message": "Which product would you like to delete?",
+                    "items": [item["product"] for item in db["cart"]] + ["Or type 'cancel' to go back."]
+                }
+            elif message in ["no", "n", "nope"]:
+                BOT_STATE["expecting"] = None
+                return {
+                    "title": "Cart",
+                    "message": "Okay. Type 'checkout' to place your order.",
+                    "items": []
+                }
+            else:
+                BOT_STATE["expecting"] = None
+
+        elif BOT_STATE["expecting"] == "delete_product":
+            target = find_product(db["products"], message)
+            cart_item = next((item for item in db["cart"] if item["product"].lower() == message.lower() or (target and target["name"].lower() == item["product"].lower())), None)
+            
+            if cart_item:
+                db["cart"].remove(cart_item)
+                prod = next((p for p in db["products"] if p["name"] == cart_item["product"]), None)
+                if prod:
+                    prod["stock"] += cart_item["qty"]
+                save(db)
+                BOT_STATE["expecting"] = None
+                return {
+                    "title": "Deleted",
+                    "message": f"Removed {cart_item['product']} from your cart.",
+                    "items": ["Type 'checkout' to place your order."]
+                }
+            else:
+                if message in ["cancel", "back", "no"]:
+                    BOT_STATE["expecting"] = None
+                    return {"title": "Cancelled", "message": "Deletion cancelled.", "items": ["Type 'checkout' to place your order."]}
+                return {
+                    "title": "Not Found",
+                    "message": "Product not found in cart. Please type the product name or 'cancel'.",
+                    "items": []
+                }
+
         if message in ["show status", "status", "overview"]:
             return build_chat_response(action="show_status")
 
@@ -204,8 +351,11 @@ def build_chat_response(action="", message=""):
         if message in ["delivery help", "delivery", "shipping"]:
             return build_chat_response(action="delivery_help")
 
-        if message in ["checkout help", "checkout"]:
+        if message in ["checkout help"]:
             return build_chat_response(action="checkout_help")
+
+        if message in ["checkout", "checkout now", "place order"]:
+            return build_chat_response(action="do_checkout")
 
         if message in ["payment options", "payment", "pay"]:
             return build_chat_response(action="payment_help")
@@ -215,9 +365,16 @@ def build_chat_response(action="", message=""):
 
         matched_product = find_product(products, message)
         if matched_product:
+            if matched_product["stock"] > 0:
+                BOT_STATE["product"] = matched_product["name"]
+                BOT_STATE["expecting"] = "confirmation"
+                prompt_msg = "Would you like to place an order for this? (yes/no)"
+            else:
+                prompt_msg = "This product is currently out of stock."
+
             return {
                 "title": matched_product["name"],
-                "message": f"Here are the current details for {matched_product['name']}.",
+                "message": f"Here are the current details for {matched_product['name']}. {prompt_msg}",
                 "items": [
                     f"Price: Rs. {matched_product['price']}",
                     f"Stock: {matched_product['stock']}",
@@ -242,7 +399,7 @@ def build_chat_response(action="", message=""):
             return build_chat_response(action="delivery_help")
 
         if any(word in message for word in ["checkout", "order", "buy", "purchase"]):
-            return build_chat_response(action="checkout_help")
+            return build_chat_response(action="do_checkout")
 
         if any(word in message for word in ["offer", "offers", "discount", "deal"]):
             return build_chat_response(action="show_offers")

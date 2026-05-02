@@ -276,6 +276,7 @@ async function runChatAction(action) {
             result.message ?? "",
             Array.isArray(result.items) ? result.items : []
         );
+        await refreshDashboard();
     } catch (error) {
         appendChatMessage(
             "Assistant",
@@ -319,6 +320,7 @@ async function sendChatMessage(message) {
             result.message ?? "",
             Array.isArray(result.items) ? result.items : []
         );
+        await refreshDashboard();
     } catch (error) {
         appendChatMessage(
             "Assistant",

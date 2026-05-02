@@ -3,49 +3,49 @@
         {
             "name": "Laptop",
             "price": 50000,
-            "stock": 1,
+            "stock": 6,
             "delivery": "3 days",
             "specs": "i5, 8GB RAM"
         },
         {
             "name": "Phone",
             "price": 20000,
-            "stock": 4,
+            "stock": 7,
             "delivery": "2 days",
             "specs": "6GB RAM"
         },
         {
             "name": "Headphones",
             "price": 2000,
-            "stock": 10,
+            "stock": 14,
             "delivery": "1 day",
             "specs": "Wireless"
         },
         {
             "name": "Power Bank",
             "price": 3000,
-            "stock": 13,
+            "stock": 18,
             "delivery": "2 days",
             "specs": "10000mAh, USB-C, 22.5W fast charge"
         },
         {
             "name": "Smartwatch",
             "price": 4500,
-            "stock": 8,
+            "stock": 12,
             "delivery": "2 days",
             "specs": "1.69\" display, heart rate, 7-day battery"
         },
         {
             "name": "Wireless Mouse",
             "price": 899,
-            "stock": 18,
+            "stock": 21,
             "delivery": "1 day",
             "specs": "Bluetooth, silent clicks, ergonomic"
         },
         {
             "name": "USB-C Cable",
             "price": 349,
-            "stock": 29,
+            "stock": 31,
             "delivery": "1 day",
             "specs": "1m braided, 60W charging & data"
         }
